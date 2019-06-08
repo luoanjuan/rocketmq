@@ -81,21 +81,27 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
 
     /**
      * Just for testing or demo program
+     * 默认主题，主题和主题对应的消费队列数可以在控制台设定，如果发送消息的主题没有事先创建，那么生产者拉取topic可以发送的队列
+     * 时没有队列。这时候会用默认主题拉取队列（拉取的队列中设置为可以自动创建主题的broker集合），然后根据负载均衡算法向这些broker
+     * 发送消息。
      */
     private String createTopicKey = MixAll.AUTO_CREATE_TOPIC_KEY_TOPIC;
 
     /**
      * Number of queues to create per default topic.
+     * 默认主题对应的消费队列
      */
     private volatile int defaultTopicQueueNums = 4;
 
     /**
      * Timeout for sending messages.
+     * 发送消息超时时间
      */
     private int sendMsgTimeout = 3000;
 
     /**
      * Compress message body threshold, namely, message body larger than 4k will be compressed on default.
+     * 消息体压缩的阈值
      */
     private int compressMsgBodyOverHowmuch = 1024 * 4;
 
@@ -104,6 +110,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      * </p>
      *
      * This may potentially cause message duplication which is up to application developers to resolve.
+     * 消息发送失败后的重试次数
      */
     private int retryTimesWhenSendFailed = 2;
 
@@ -309,6 +316,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      * @param topic Topic to fetch.
      * @return List of message queues readily to send messages to
      * @throws MQClientException if there is any client error.
+     * 查找该主题下所有的消息队列
      */
     @Override
     public List<MessageQueue> fetchPublishMessageQueues(String topic) throws MQClientException {
@@ -666,6 +674,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      * @param timestamp from when in milliseconds.
      * @return Consume queue offset.
      * @throws MQClientException if there is any client error.
+     * 根据时间戳从队列中查找偏移量
      */
     @Override
     public long searchOffset(MessageQueue mq, long timestamp) throws MQClientException {
@@ -680,6 +689,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      * @param mq Instance of MessageQueue
      * @return maximum offset of the given consume queue.
      * @throws MQClientException if there is any client error.
+     * 查找该消息队列中最大偏移量
      */
     @Deprecated
     @Override
@@ -695,6 +705,7 @@ public class DefaultMQProducer extends ClientConfig implements MQProducer {
      * @param mq Instance of MessageQueue
      * @return minimum offset of the given message queue.
      * @throws MQClientException if there is any client error.
+     * 查找该队列中最小偏移量
      */
     @Deprecated
     @Override

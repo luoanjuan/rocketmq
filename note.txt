@@ -1,0 +1,13 @@
+1 在发送消息和消费消息的时候都只是指定了nameServer地址，没有指定broker集群，如果生产者或消费者的topic在两个broker集群中都
+有怎么办（还是创建topic的时候会限制）？
+2 如果linux系统是通过进程实现线程的，那么通过ps命令只能看到我们所说的进程，但是看不到线程
+3 如果生产者发送的消息的主题在nameServer中注册的broker上都没有
+会拿默认主题到nameServer上查询，会返回可以自动创建主题的所有broker集群信息，生产者挑选一个队列发送消息：
+DefaultMQProducerImpl-->tryToFindTopicPublishInfo 方法中如果该topic查询不到相关的broker及consumeQueue的信息，会查询默认topic信息，
+发送消息时也会添加默认主题的相关信息，如主题名，队列数。
+broker接收到消息后根据接收到消息主题创建consumeQueue（即topicConfig）：
+SendMessageProcessor.processRequest()
+-->SendMessageProcessor.sendMessage()
+-->AbstractSendMessageProcessor.msgCheck
+-->TopicConfigManager.createTopicInSendMessageMethod 在TopicConfigManager中添加新topic的TopicConfig
+注：默认主题TBW102在需要自动创建主题的broker上默认的队列数还是8，但是自动创建的新的主题默认队列数是4。
