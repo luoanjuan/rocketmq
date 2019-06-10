@@ -1,6 +1,8 @@
 1 在发送消息和消费消息的时候都只是指定了nameServer地址，没有指定broker集群，如果生产者或消费者的topic在两个broker集群中都
 有怎么办（还是创建topic的时候会限制）？
+
 2 如果linux系统是通过进程实现线程的，那么通过ps命令只能看到我们所说的进程，但是看不到线程
+
 3 如果生产者发送的消息的主题在nameServer中注册的broker上都没有
 会拿默认主题到nameServer上查询，会返回可以自动创建主题的所有broker集群信息，生产者挑选一个队列发送消息：
 DefaultMQProducerImpl-->tryToFindTopicPublishInfo 方法中如果该topic查询不到相关的broker及consumeQueue的信息，会查询默认topic信息，
@@ -10,4 +12,18 @@ SendMessageProcessor.processRequest()
 -->SendMessageProcessor.sendMessage()
 -->AbstractSendMessageProcessor.msgCheck
 -->TopicConfigManager.createTopicInSendMessageMethod 在TopicConfigManager中添加新topic的TopicConfig
-注：默认主题TBW102在需要自动创建主题的broker上默认的队列数还是8，但是自动创建的新的主题默认队列数是4。
+注：默认主题TBW102在需要自动创建主题的broker上默认的队列数还是8，但是自动创建的新的主题默认队列数是4。消费者消费失败将消息发送会broker，
+broker也是在TopicConfigManager.createTopicInSendMessageMethod方法中添加TopicConfig，默认队列数是1。
+
+4 同一个消费者集群代码中没有强制要求订阅的主题和tag必须一致，但是实际业务中不可以不一致。因为负载均衡的时候是根据集群做负载均衡。
+假设订阅的topic不一致：如果同一个集群中的消费者A、B分别订阅主题topicA和topicB，那么topicA和topicB的队列会在这个集群中做负载均衡，
+那么分配给B的topicA队列及分配给A的topicB队列都不会被消费（这两个队列会没有消费者管，不会有消费者去拉取信息），或者说对于topicA，
+只有分配给A的队列才能被消费，对于topicB只有分配给B的才会被消费。
+假设topic一致，tag不一致：A订阅的是tagA，B订阅的是TagB。负载均衡的结果是A消费consumeA，B消费consumeB（发送者会向两个队列发送tagA和tagB的
+消息），那么consumeA中的tagB消息和consumeB中的tagA消息都不会被消费。
+以上两种情况，消费者都不清楚自己需要消费什么。
+
+5 定时消息逻辑：
+ 将消息存储在commitLog，然后根据延迟级别转发到相应的延迟队列（有多少个延迟级别就有多少个延迟队列，默认是16个）
+ ScheduleMessageService会为没有一个延迟就把创建一个任务调度，定时调度的实现类为DeliverDelayedMesssageTimerTask。
+ 任务调度从相应的延迟队列获取消息，将消息内容从CommitLog中获取出来，恢复原来的主题和队列，重新存放至CommitLog中，并转发至原来的消息队列。
